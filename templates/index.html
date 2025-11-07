@@ -1,37 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Auto Cut - DaVinci Resolve</title>
+    <meta charset="UTF-8">
+    <title>🎬 Auto Cut Controller</title>
     <style>
-        body { font-family: Arial; background: #121212; color: #eee; text-align: center; margin-top: 80px; }
-        input { padding: 10px; width: 100px; border-radius: 8px; border: none; margin: 10px; }
-        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        #output { margin-top: 20px; color: #0f0; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #eee;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: #222;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            width: 400px;
+        }
+        h2 { text-align: center; color: #00e676; }
+        label { display: block; margin-top: 12px; }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            margin-top: 5px;
+            background: #333;
+            color: #fff;
+        }
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 10px;
+            background: #00e676;
+            color: #111;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        pre {
+            background: #333;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 20px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
     </style>
 </head>
 <body>
-    <h1>🎬 DaVinci Auto-Cut Tool</h1>
-    <form id="cutForm">
-        <label>Segment Duration (sec):</label>
-        <input type="number" name="segment_seconds" value="10"><br>
-        <label>Gap Duration (sec):</label>
-        <input type="number" name="remove_seconds" value="1"><br>
-        <button type="submit">Run Script</button>
-    </form>
+    <div class="container">
+        <h2>🎬 Auto Video Cutter</h2>
+        <form method="POST" action="/run">
+            <label>DaVinci Resolve Path:</label>
+            <input type="text" name="davinci_path" value="C:/Program Files/Blackmagic Design/DaVinci Resolve" required>
 
-    <div id="output"></div>
+            <label>Cut Interval (seconds):</label>
+            <input type="number" step="0.1" name="cut_interval" value="10" required>
 
-    <script>
-        document.getElementById('cutForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const res = await fetch('/run', { method: 'POST', body: formData });
-            const data = await res.json();
-            document.getElementById('output').innerText = data.success
-                ? `✅ Success! New Timeline: ${data.timeline}, Segments: ${data.segments}`
-                : `❌ Failed: ${data.message}`;
-        });
-    </script>
+            <label>Remove Duration (seconds):</label>
+            <input type="number" step="0.1" name="remove_duration" value="1" required>
+
+            <label>Audio Threshold (dB):</label>
+            <input type="number" step="0.1" name="audio_threshold" value="-35" required>
+
+            <button type="submit">Run Auto Cut</button>
+        </form>
+
+        {% if output %}
+        <pre>{{ output }}</pre>
+        {% endif %}
+    </div>
 </body>
 </html>

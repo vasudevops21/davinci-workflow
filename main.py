@@ -1,22 +1,28 @@
-from flask import Flask, render_template, request, jsonify
-from auto_cut_script import auto_cut_and_keep_gaps
+# main.py
+from flask import Flask, render_template, request
+from auto_cut_script import run_auto_cut
 
 app = Flask(__name__)
 
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/run', methods=['POST'])
+@app.route("/run", methods=["POST"])
 def run_script():
-    try:
-        segment_seconds = int(request.form.get('segment_seconds', 10))
-        remove_seconds = int(request.form.get('remove_seconds', 1))
+    davinci_path = request.form.get("davinci_path")
+    cut_interval = float(request.form.get("cut_interval"))
+    remove_duration = float(request.form.get("remove_duration"))
+    audio_threshold = float(request.form.get("audio_threshold"))
 
-        result = auto_cut_and_keep_gaps(segment_seconds, remove_seconds)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)})
+    result = run_auto_cut(
+        DAVINCI_PATH=davinci_path,
+        CUT_INTERVAL=cut_interval,
+        REMOVE_DURATION=remove_duration,
+        AUDIO_THRESHOLD_DB=audio_threshold,
+    )
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    return render_template("index.html", output=result)
+
+if __name__ == "__main__":
+    app.run(debug=True)
