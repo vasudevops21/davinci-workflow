@@ -1,23 +1,34 @@
-"""
-Auto-Cut and Delete 1-Second Portions (In-Place)
-------------------------------------------------
-This script automatically cuts the current timeline every 10 seconds,
-deletes the next 1-second portions (no ripple delete, leaves gaps),
+
+        """
+Auto-Cut and Delete Portions (In-Place)
+---------------------------------------
+This script automatically cuts the current timeline every N seconds,
+deletes the next M-second portions (no ripple delete, leaves gaps),
 and keeps the same timeline length.
 
 ✅ Works with DaVinci Resolve Studio 18+
-✅ Same format as your old working script
+✅ Parameters (edit below manually)
 """
 
 import sys
 import os
 import time
 
+# ==============================================================
+# 🔧 USER SETTINGS — Change these as you wish
+# ==============================================================
+
+SEGMENT_SECONDS = 10   # ⏱ Duration to KEEP between cuts
+REMOVE_SECONDS = 1     # ❌ Duration to DELETE after each kept segment
+
+# ==============================================================
+
 # Add DaVinci Resolve Script Module Path (adjust if needed)
 sys.path.append(r"C:\ProgramData\Blackmagic Design\DaVinci Resolve\Support\Developer\Scripting\Modules")
 
-def auto_cut_delete_in_place():
-    """Automatically cuts and deletes 1-second portions in-place every 10 seconds."""
+
+def auto_cut_delete_in_place(segment_seconds=SEGMENT_SECONDS, remove_seconds=REMOVE_SECONDS):
+    """Automatically cuts and deletes M-second portions in-place every N seconds."""
     try:
         import DaVinciResolveScript as dvr
         resolve = dvr.scriptapp("Resolve")
@@ -47,8 +58,6 @@ def auto_cut_delete_in_place():
     # Get settings
     settings = timeline.GetSetting()
     frame_rate = float(settings.get('timelineFrameRate', 24))
-    segment_seconds = 10
-    remove_seconds = 1
     segment_frames = int(segment_seconds * frame_rate)
     remove_frames = int(remove_seconds * frame_rate)
 
@@ -58,7 +67,8 @@ def auto_cut_delete_in_place():
         print("❌ No clips found on video track 1.")
         return False
 
-    print(f"Found {len(video_items)} clip(s) to process.\n")
+    print(f"Found {len(video_items)} clip(s) to process.")
+    print(f"🕐 Keeping {segment_seconds}s per segment, deleting {remove_seconds}s each cycle.\n")
 
     total_deleted = 0
 
@@ -84,22 +94,23 @@ def auto_cut_delete_in_place():
             timeline.CutAtTimecode(delete_end_tc)
             time.sleep(0.1)
 
-            # After cutting, find the middle 1s clip and delete it
+            # After cutting, find and delete the middle section
             new_items = timeline.GetItemsInTrack("video", 1)
             for clip in new_items.values():
                 c_start = clip.GetStart()
-                c_end = clip.GetEnd()
                 if abs(c_start - delete_start) < (frame_rate / 2):
-                    print(f"🗑 Deleting 1s section at {delete_start/frame_rate:.2f}s – {delete_end/frame_rate:.2f}s")
-                    clip.Delete(ripple=False)  # ❗ No ripple delete (keeps gap)
+                    print(f"🗑 Deleting {remove_seconds}s section at {delete_start/frame_rate:.2f}s – {delete_end/frame_rate:.2f}s")
+                    clip.Delete(ripple=False)  # No ripple delete
                     total_deleted += 1
                     break
 
             current_frame += segment_frames + remove_frames
 
+        print(f"✅ Finished {clip_name}")
+
     print("\n" + "=" * 60)
     print(f"✅ Auto-Cut Complete! Deleted {total_deleted} sections.")
-    print("🕐 Kept 10s segments, deleted 1s between (gaps left in place).")
+    print(f"🕐 Kept {segment_seconds}s segments, deleted {remove_seconds}s between (gaps left in place).")
     print("=============================================================")
     return True
 
@@ -107,8 +118,9 @@ def auto_cut_delete_in_place():
 # Entry point
 if __name__ == "__main__":
     print("=" * 60)
-    print("🎬 DaVinci Resolve Auto-Cut Script (Delete 1-Second In-Place)")
+    print("🎬 DaVinci Resolve Auto-Cut Script (Delete In-Place)")
     print("=" * 60)
+    print(f"⏱ Using Settings → Keep: {SEGMENT_SECONDS}s | Delete: {REMOVE_SECONDS}s")
     print("Make sure Resolve Studio is open with a project and timeline loaded.\n")
 
     success = auto_cut_delete_in_place()
@@ -116,4 +128,4 @@ if __name__ == "__main__":
     if success:
         print("\n✅ Done! Check your current timeline inside DaVinci Resolve.")
     else:
-        print("\n❌ Script failed. Please review the messages above.")
+        print("\n❌ Script failed. Please review the messages above.")
