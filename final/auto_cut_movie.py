@@ -1,22 +1,32 @@
 """
 Auto-Cut and Keep Gaps Script for DaVinci Resolve Studio
 --------------------------------------------------------
-This script automatically cuts a timeline every 10 seconds,
-creates 1-second gaps between those cuts (keeps them as empty spaces),
+This script automatically cuts a timeline every N seconds,
+creates M-second gaps between those cuts (keeps them as empty spaces),
 and creates a new timeline with the separated clips stitched with gaps.
 
 ✅ Works with DaVinci Resolve Studio 18+
+✅ Parameters configurable at the top
 """
 
 import sys
 import os
 
+# ==============================================================
+# 🔧 USER SETTINGS — Change these before running
+# ==============================================================
+
+SEGMENT_SECONDS = 8   # ⏱ Duration to KEEP per segment
+GAP_SECONDS = 2        # ⏳ Duration of EMPTY GAP between segments
+
+# ==============================================================
+
 # Add DaVinci Resolve Scripting Path (adjust if needed)
 sys.path.append(r"C:\ProgramData\Blackmagic Design\DaVinci Resolve\Support\Developer\Scripting\Modules")
 
-def auto_cut_and_keep_gaps():
-    """Automatically cuts and keeps 1-second gaps between 10-second segments."""
-    
+def auto_cut_and_keep_gaps(segment_seconds=SEGMENT_SECONDS, gap_seconds=GAP_SECONDS):
+    """Automatically cuts and keeps gaps between segments."""
+
     # Try to connect to DaVinci Resolve
     try:
         import DaVinciResolveScript as dvr
@@ -47,10 +57,8 @@ def auto_cut_and_keep_gaps():
     # Get settings
     settings = timeline.GetSetting()
     frame_rate = float(settings.get('timelineFrameRate', 24))
-    segment_seconds = 10
-    remove_seconds = 1
     segment_frames = int(segment_seconds * frame_rate)
-    remove_frames = int(remove_seconds * frame_rate)
+    gap_frames = int(gap_seconds * frame_rate)
 
     # Get clips from video track 1
     video_items = timeline.GetItemListInTrack("video", 1)
@@ -59,6 +67,8 @@ def auto_cut_and_keep_gaps():
         return False
 
     print(f"Found {len(video_items)} clip(s) to process.")
+    print(f"🕐 Keeping {segment_seconds}s per segment, leaving {gap_seconds}s gaps.\n")
+
     media_pool = project.GetMediaPool()
 
     # Prepare new timeline
@@ -83,14 +93,14 @@ def auto_cut_and_keep_gaps():
 
         print(f"\n✂ Cutting clip: {clip_name} ({clip_duration} frames)")
 
-        cycle = segment_frames + remove_frames
+        cycle = segment_frames + gap_frames
         position = 0
 
         while position < clip_duration:
             segment_start = position
             segment_end = min(position + segment_frames, clip_duration)
 
-            # Add 10-second portion
+            # Add segment
             if segment_start < clip_duration:
                 added = media_pool.AppendToTimeline([{
                     'mediaPoolItem': media_item,
@@ -107,25 +117,27 @@ def auto_cut_and_keep_gaps():
                     total_segments += 1
                     print(f"  ✅ Added {segment_seconds}s segment ({segment_start}-{segment_end})")
 
-            # Move to next cycle and keep a 1-second empty gap
+            # Move ahead by one cycle (adds gap)
             position += cycle
-            current_timeline_frame += remove_frames  # <-- leaves 1s empty space in the new timeline
+            current_timeline_frame += gap_frames  # leaves empty space (gap)
 
         print(f"  → Finished cutting {clip_name}")
 
     print("\n" + "=" * 60)
-    print(f"🎞  Auto-Cut Completed (with 1s gaps)!")
+    print(f"🎞️  Auto-Cut Completed (with {gap_seconds}s gaps)!")
     print(f"📄  New timeline: {new_timeline_name}")
     print(f"📸  Total segments added: {total_segments}")
-    print(f"🕐  Each segment: {segment_seconds}s (kept {remove_seconds}s gaps between each)")
-    print(f"=" * 60)
+    print(f"🕐  Each segment: {segment_seconds}s (kept {gap_seconds}s gaps between each)")
+    print("=" * 60)
     return True
 
 
+# Entry point
 if __name__ == "__main__":
     print("=" * 60)
-    print("🎬 DaVinci Resolve Auto-Cut Script (Keep 1-Second Gaps)")
+    print("🎬 DaVinci Resolve Auto-Cut Script (Keep Gaps)")
     print("=" * 60)
+    print(f"⏱ Using Settings → Keep: {SEGMENT_SECONDS}s | Gap: {GAP_SECONDS}s")
     print("Make sure Resolve Studio is open with a project and timeline loaded.\n")
 
     success = auto_cut_and_keep_gaps()
