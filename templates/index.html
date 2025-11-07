@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto Cut - DaVinci Resolve</title>
+    <style>
+        body { font-family: Arial; background: #121212; color: #eee; text-align: center; margin-top: 80px; }
+        input { padding: 10px; width: 100px; border-radius: 8px; border: none; margin: 10px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        #output { margin-top: 20px; color: #0f0; }
+    </style>
+</head>
+<body>
+    <h1>🎬 DaVinci Auto-Cut Tool</h1>
+    <form id="cutForm">
+        <label>Segment Duration (sec):</label>
+        <input type="number" name="segment_seconds" value="10"><br>
+        <label>Gap Duration (sec):</label>
+        <input type="number" name="remove_seconds" value="1"><br>
+        <button type="submit">Run Script</button>
+    </form>
+
+    <div id="output"></div>
+
+    <script>
+        document.getElementById('cutForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const res = await fetch('/run', { method: 'POST', body: formData });
+            const data = await res.json();
+            document.getElementById('output').innerText = data.success
+                ? `✅ Success! New Timeline: ${data.timeline}, Segments: ${data.segments}`
+                : `❌ Failed: ${data.message}`;
+        });
+    </script>
+</body>
+</html>
